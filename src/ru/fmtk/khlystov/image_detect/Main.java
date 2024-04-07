@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.abs;
@@ -20,25 +19,43 @@ import static java.lang.Math.min;
 
 public class Main {
 
-    // sx,sy - bounds of the hash of the first part of picture
-    // ex, ey - bounds of the hash of the second part of picture
     private static final Map<String, List<Set<Integer>>> hashOfNumbers = new HashMap<>();
     private static final TreeMap<Integer, String> suitsByHash = new TreeMap<>();
 
     static {
-        hashOfNumbers.put("A", List.of(Set.of(17, 9, -10, -11, -12, 12, -13, 13, -15, 15), Set.of(48, -42, -43, -44, -45, 45, 46, 47), Set.of(-114, 129, -115, 132, -118, -120, -121, 138, 125, 127)));
+        hashOfNumbers.put("A", List.of(Set.of(17, 9, -10, -11, -12, 12, -13, 13, -15, 15),
+                                       Set.of(48, -42, -43, -44, -45, 45, 46, 47),
+                                       Set.of(-114, 129, -115, 132, -118, -120, -121, 138, 125, 127)));
         hashOfNumbers.put("J", List.of(Set.of(0), Set.of(-24, 25, -27, 27), Set.of(-85, 85, 86, -88, -72, 73, 89)));
-        hashOfNumbers.put("K", List.of(Set.of(-50, 50, 53, 54, -39, -43, 43), Set.of(-54, 54, 55, -44, -45, 45, -46), Set.of(-81, -82, 83, -85, -86, 85, -89, 92, 93, 94)));
-        hashOfNumbers.put("Q", List.of(Set.of(-39, -40, 40, -41, -42, 41, 43), Set.of(-41, -42, 41, 42, 44), Set.of(162, -147, -148, -149, -150, -151, 156, 157, 158)));
-        hashOfNumbers.put("10", List.of(Set.of(-49, 48, 49, -51, -55, -56, 56, 57, -46, -48, 47), Set.of(-33, 33, -36, -44, 44), Set.of(193, -179, 194, 197, -182, 215, -185, 185, 188, 190, -272)));
-        hashOfNumbers.put("2", List.of(Set.of(32, -33, 33, -22, -23, -25, 25, 26), Set.of(48, -51, 51, 52, 54, -43, -45, -46, 46), Set.of(-81, 84, 85, -89, 125, -126, 94, -79, 126)));
-        hashOfNumbers.put("3", List.of(Set.of(-37, 37, -27, -30, 30, 31), Set.of(39, -40, 40, -26, -28, -29, 28, 30), Set.of(-97, 148, 100, -149, 101, 150, -104, 106, -94)));
-        hashOfNumbers.put("4", List.of(Set.of(-17, 17, -18, 18, -21, 21, -14, 13, -15, 15), Set.of(-33, 34, -36, 35, 36, -42, -43, 42, 43), Set.of(-118, -119, 119, -152, -105, 152, -154, 154, 107, -144, 127)));
-        hashOfNumbers.put("5", List.of(Set.of(-50, 51, -53, -54, 55, 57, 58, -62), Set.of(32, -26, -42, -27, -29, 29, 30), Set.of(-81, -83, 84, 85, -123, -77, 78, 79)));
-        hashOfNumbers.put("6", List.of(Set.of(-50, -51, 51, 52, 54, 56, 57, -47, -48), Set.of(48, 49, 50, 69, -44, -47, -48), Set.of(-84, 89, -91, 123, 92, 93, 125)));
-        hashOfNumbers.put("7", List.of(Set.of(-33, -34, 21, -23, -24, 24, -25, 25, -26, 26, 31), Set.of(32, 33, -34, -35, 36, -38, 37, 38, -42, -45, -31), Set.of(-65, -82, -83, 68, -55, 57, -58, -59, 61, 95, -80)));
-        hashOfNumbers.put("8", List.of(Set.of(-49, 49, -44, -45, -46, 46, 47), Set.of(-49, 48, -50, 50, 52, 53, -48), Set.of(98, -100, 100, 101, 104, -93, -94, 109, -95)));
-        hashOfNumbers.put("9", List.of(Set.of(48, 49, 50, -56, -44, -45, 47, -48), Set.of(-34, -36, 37, 39, -41, 40, -58, 42), Set.of(-145, -98, 103, -105, -107, 107, 109)));
+        hashOfNumbers.put("K", List.of(Set.of(-50, 50, 53, 54, -39, -43, 43), Set.of(-54, 54, 55, -44, -45, 45, -46),
+                                       Set.of(-81, -82, 83, -85, -86, 85, -89, 92, 93, 94)));
+        hashOfNumbers.put("Q", List.of(Set.of(-39, -40, 40, -41, -42, 41, 43), Set.of(-41, -42, 41, 42, 44),
+                                       Set.of(162, -147, -148, -149, -150, -151, 156, 157, 158)));
+        hashOfNumbers.put("10", List.of(Set.of(-49, 48, 49, -51, -55, -56, 56, 57, -46, -48, 47),
+                                        Set.of(-33, 33, -36, -44, 44),
+                                        Set.of(193, -179, 194, 197, -182, 215, -185, 185, 188, 190, -272)));
+        hashOfNumbers.put("2", List.of(Set.of(32, -33, 33, -22, -23, -25, 25, 26),
+                                       Set.of(48, -51, 51, 52, 54, -43, -45, -46, 46),
+                                       Set.of(-81, 84, 85, -89, 125, -126, 94, -79, 126)));
+        hashOfNumbers.put("3", List.of(Set.of(-37, 37, -27, -30, 30, 31), Set.of(39, -40, 40, -26, -28, -29, 28, 30),
+                                       Set.of(-97, 148, 100, -149, 101, 150, -104, 106, -94)));
+        hashOfNumbers.put("4", List.of(Set.of(-17, 17, -18, 18, -21, 21, -14, 13, -15, 15),
+                                       Set.of(-33, 34, -36, 35, 36, -42, -43, 42, 43),
+                                       Set.of(-118, -119, 119, -152, -105, 152, -154, 154, 107, -144, 127)));
+        hashOfNumbers.put("5",
+                          List.of(Set.of(-50, 51, -53, -54, 55, 57, 58, -62), Set.of(32, -26, -42, -27, -29, 29, 30),
+                                  Set.of(-81, -83, 84, 85, -123, -77, 78, 79)));
+        hashOfNumbers.put("6",
+                          List.of(Set.of(-50, -51, 51, 52, 54, 56, 57, -47, -48), Set.of(48, 49, 50, 69, -44, -47, -48),
+                                  Set.of(-84, 89, -91, 123, 92, 93, 125)));
+        hashOfNumbers.put("7", List.of(Set.of(-33, -34, 21, -23, -24, 24, -25, 25, -26, 26, 31),
+                                       Set.of(32, 33, -34, -35, 36, -38, 37, 38, -42, -45, -31),
+                                       Set.of(-65, -82, -83, 68, -55, 57, -58, -59, 61, 95, -80)));
+        hashOfNumbers.put("8", List.of(Set.of(-49, 49, -44, -45, -46, 46, 47), Set.of(-49, 48, -50, 50, 52, 53, -48),
+                                       Set.of(98, -100, 100, 101, 104, -93, -94, 109, -95)));
+        hashOfNumbers.put("9", List.of(Set.of(48, 49, 50, -56, -44, -45, 47, -48),
+                                       Set.of(-34, -36, 37, 39, -41, 40, -58, 42),
+                                       Set.of(-145, -98, 103, -105, -107, 107, 109)));
 
 
         suitsByHash.put(98, "c");
@@ -61,7 +78,7 @@ public class Main {
     public static final int BLACK_TONE = 0x23;
     private static final int RED_TONE = 0x60;
     public static final int CARD_SIZE_RUN = 12;
-    public static final int SEARCH_BEST_Y_DEPTH = 8;
+    public static final int SEARCH_BEST_Y_DEPTH = 7;
     private static final int CARD_WIDTH = 52;
     public static final int CARD_HEIGHT = 74;
     public static final int SUIT_START_Y = 27;
@@ -75,19 +92,18 @@ public class Main {
             logger.accept("You need to specify directory for searching.");
             return;
         }
-        logger.accept("Parse png files in directory " + args[0]);
         try {
             streamFileNamesInDir(args[0]).stream()
-                    .map(path -> new AbstractMap.SimpleEntry<>(path, processFile(path)))
-                    .forEach(entry -> {
-                        String fName = entry.getKey().getFileName().toString();
-                        String cards = entry.getValue();
-                        logger.accept(fName + " - " + cards);
-                        if(!fName.equals(cards + ".png")) {
-                            errCount.incrementAndGet();
-                        }
-                    });
-            if(errCount.get() > 0) {
+                                         .map(path -> new AbstractMap.SimpleEntry<>(path, processFile(path)))
+                                         .forEach(entry -> {
+                                             String fName = entry.getKey().getFileName().toString();
+                                             String cards = entry.getValue();
+                                             logger.accept(fName + " - " + cards);
+                                             if (!fName.equals(cards + ".png")) {
+                                                 errCount.incrementAndGet();
+                                             }
+                                         });
+            if (errCount.get() > 0) {
                 logger.accept("Errors: " + errCount.get());
             }
         } catch (NoSuchFileException e) {
@@ -99,45 +115,44 @@ public class Main {
 
     private static List<Path> streamFileNamesInDir(String dirName) throws IOException {
         try (Stream<Path> stream = Files.list(Paths.get(dirName))) {
-            return stream.filter(file -> !Files.isDirectory(file) && file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png")).toList();
+            return stream.filter(file -> !Files.isDirectory(file) &&
+                                         file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
+                         .toList();
         }
     }
 
     private static String processFile(Path pathToFile) {
-        final String writeName = pathToFile.getFileName().toString();
-        final String cards = writeName.substring(0, writeName.lastIndexOf('.'));
-        final String cardsNorm = cards.replace("10", "1");
         final StringBuilder result = new StringBuilder();
         try {
             final BufferedImage image = ImageIO.read(pathToFile.toFile());
-            BufferedImage searchArea = image.getSubimage(SEARCH_AREA.x, SEARCH_AREA.y, SEARCH_AREA.width, SEARCH_AREA.height);
+            BufferedImage searchArea = image.getSubimage(SEARCH_AREA.x, SEARCH_AREA.y, SEARCH_AREA.width,
+                                                         SEARCH_AREA.height);
 
             List<Rectangle> cardsToCheck = findPotentialCards(searchArea);
-            final int[] i = new int[]{0};
             cardsToCheck.forEach(card -> {
-                String realNumber = cardsNorm.substring(i[0] * 2, i[0] * 2 + 1);
-
                 BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, 30, 23);
-                Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y, card.x + 12, card.y + SUIT_START_Y + 21, 17, 17);
+                Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y, card.x + 12,
+                                                    card.y + SUIT_START_Y + 21, 17, 17);
                 if (suitStart == null) {
                     suitStart = new Point(card.x, card.y + SUIT_START_Y);
                 }
                 BufferedImage suitImg = searchArea.getSubimage(suitStart.x, suitStart.y, 16, 21);
-                boolean isRed = isRed(suitImg);
+                int red = isRed(suitImg) ? -1 : 1;
                 int ySplit = numberImg.getHeight() / 2;
-                List<Integer> hashes = List.of((isRed ? -1 : 1) * countPixels(numberImg.getSubimage(0, 0, NUMBER_SPLIT_X, ySplit)), (isRed ? -1 : 1) * countPixels(numberImg.getSubimage(0, ySplit, NUMBER_SPLIT_X, numberImg.getHeight() - ySplit)), (isRed ? -1 : 1) * countPixels(numberImg.getSubimage(NUMBER_SPLIT_X, 0, numberImg.getWidth() - NUMBER_SPLIT_X, numberImg.getHeight())));
-                int numberHashesSize = hashes.size();
+                List<Integer> hashes = List.of(
+                        red * countPixels(numberImg.getSubimage(0, 0, NUMBER_SPLIT_X, ySplit)),
+                        red * countPixels(numberImg.getSubimage(
+                                0, ySplit, NUMBER_SPLIT_X, numberImg.getHeight() - ySplit)),
+                        red * countPixels(numberImg.getSubimage(
+                                NUMBER_SPLIT_X, 0, numberImg.getWidth() - NUMBER_SPLIT_X, numberImg.getHeight())));
                 int suitHash = countPixels(suitImg);
 
                 String number = getMostFitted(hashOfNumbers, hashes);
-                String suit = getMostFitted(suitsByHash, (isRed ? -1 : 1) * suitHash);
+                String suit = getMostFitted(suitsByHash, red * suitHash);
                 if (number != null && suit != null) {
                     result.append(number);
                     result.append(suit);
                 }
-
-
-                i[0] = i[0] + 1;
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -184,7 +199,7 @@ public class Main {
         for (int y = 0; y < img.getHeight(); ++y) {
             for (int x = 0; x < img.getWidth(); ++x) {
                 final int rgb = img.getRGB(x, y);
-                if (!isWhiteOrGrey(rgb)) {
+                if (isNotWhiteOrGrey(rgb)) {
                     ++count;
                 }
             }
@@ -216,10 +231,13 @@ public class Main {
         while (y < h) {
             int x = 0;
             while (x < w) {
-                if (isCardStripeHorizontal(image, x, y, CARD_WIDTH) && isCardStripeHorizontal(image, x, y + SUIT_START_Y + 1, CARD_WIDTH)) {
+                if (isCardStripeHorizontal(image, x, y, CARD_WIDTH) &&
+                    isCardStripeHorizontal(image, x, y + SUIT_START_Y + 1, CARD_WIDTH)) {
                     List<Point> cardsToAdd = findBestStartOfCards(image, y);
                     cardsToAdd.forEach(start -> {
-                        start = fitBoundRightDown(image, start.x, start.y, start.x + CARD_SIZE_RUN, start.y + CARD_SIZE_RUN, CARD_WIDTH + 1, CARD_HEIGHT + 1);
+                        start = fitBoundRightDown(
+                                image, start.x, start.y, start.x + CARD_SIZE_RUN,
+                                start.y + CARD_SIZE_RUN, CARD_WIDTH + 1, CARD_HEIGHT + 1);
                         rectangles.add(new Rectangle(start.x + 1, start.y + 1, CARD_WIDTH, CARD_HEIGHT));
                     });
                     y += CARD_HEIGHT;
@@ -239,7 +257,9 @@ public class Main {
             List<Point> tmpCards = new ArrayList<>(10);
             int x = 0;
             while (x < img.getWidth()) {
-                if (isCardStripeHorizontal(img, x, y + i, CARD_WIDTH) && isCardStripeHorizontal(img, x, y + i + SUIT_START_Y + 1, CARD_WIDTH) && isCardStripeVertical(img, x, y + i, CARD_HEIGHT + 1)) {
+                if (isCardStripeHorizontal(img, x, y + i, CARD_WIDTH) &&
+                    isCardStripeHorizontal(img, x, y + i + SUIT_START_Y + 1, CARD_WIDTH) &&
+                    isCardStripeVertical(img, x, y + i, CARD_HEIGHT + 1)) {
                     tmpCards.add(new Point(x, y + i));
                     x += CARD_WIDTH + 1;
                 } else {
@@ -253,7 +273,6 @@ public class Main {
         }
         return bestCardStars;
     }
-
 
     // Search last white stripe in horizontal and vertical
     private static Point fitBoundRightDown(BufferedImage img, int x, int y, int w, int h, int stripeW, int stripeH) {
@@ -280,7 +299,7 @@ public class Main {
         int maxX = x + w;
         for (; x < maxX; ++x) {
             final int rgb = img.getRGB(x, y);
-            if (!isWhiteOrGrey(rgb)) {
+            if (isNotWhiteOrGrey(rgb)) {
                 return false;
             }
         }
@@ -291,7 +310,7 @@ public class Main {
         int h = y + stripeH;
         for (; y < h; ++y) {
             final int rgb = img.getRGB(x, y);
-            if (!isWhiteOrGrey(rgb)) {
+            if (isNotWhiteOrGrey(rgb)) {
                 return false;
             }
         }
@@ -302,14 +321,15 @@ public class Main {
         int r1 = ((rgb >> 16) & 0xFF);
         int g1 = ((rgb >> 8) & 0xFF);
         int b1 = (rgb & 0xFF);
-        return r1 >= RED_TONE && (r1 - g1) > TONE_SENSITIVITY && (r1 - b1) > TONE_SENSITIVITY && abs(g1 - b1) <= TONE_SENSITIVITY;
+        return r1 >= RED_TONE && (r1 - g1) > TONE_SENSITIVITY && (r1 - b1) > TONE_SENSITIVITY &&
+               abs(g1 - b1) <= TONE_SENSITIVITY;
     }
 
-    private static boolean isWhiteOrGrey(int rgb) {
+    private static boolean isNotWhiteOrGrey(int rgb) {
         int r1 = ((rgb >> 16) & 0xFF);
         int g1 = ((rgb >> 8) & 0xFF);
         int b1 = (rgb & 0xFF);
-        return r1 >= LIGHT_GRAY_TONE && g1 >= LIGHT_GRAY_TONE && b1 >= LIGHT_GRAY_TONE;
+        return r1 < LIGHT_GRAY_TONE || g1 < LIGHT_GRAY_TONE || b1 < LIGHT_GRAY_TONE;
     }
 
     private static boolean isBlack(int rgb) {
@@ -317,24 +337,5 @@ public class Main {
         int g1 = ((rgb >> 8) & 0xFF);
         int b1 = (rgb & 0xFF);
         return r1 <= BLACK_TONE && g1 <= BLACK_TONE && b1 <= BLACK_TONE;
-    }
-
-
-    ///////////////////
-
-    private static String toRGBString(int rgb) {
-        int r1 = ((rgb >> 16) & 0xFF);
-        int g1 = ((rgb >> 8) & 0xFF);
-        int b1 = (rgb & 0xFF);
-        return String.format("#%02X%02X%02X", r1, g1, b1);
-    }
-
-    private static void write(Path pathToFile, String name, BufferedImage searchArea) {
-        Path write = pathToFile.getParent().resolve(name);
-        try {
-            ImageIO.write(searchArea, "png", write.toFile());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
