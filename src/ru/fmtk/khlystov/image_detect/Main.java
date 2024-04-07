@@ -11,44 +11,102 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.min;
 
 public class Main {
 
     // sx,sy - bounds of the hash of the first part of picture
     // ex, ey - bounds of the hash of the second part of picture
-    private static final Map<Rectangle, String> hashOfNumbers = new HashMap<>();
-    private static final Map<String, HashSet<Integer>> fBoundsByNumber = new HashMap<>();
-    private static final Map<String, HashSet<Integer>> lBoundsByNumber = new HashMap<>();
+    private static final Map<String, List<Set<Integer>>> hashOfNumbers = new HashMap<>();
+    private static final Map<String, List<Set<Integer>>> boundsByNumber = new HashMap<>();
     private static final TreeMap<Integer, String> suitsByHash = new TreeMap<>();
-    public static final int SUIT_START_Y = 27;
 
     static {
-        hashOfNumbers.put(new Rectangle(253, 437), "2");
+        hashOfNumbers.put("A", List.of(
+                Set.of(17, 9, -10, -11, -12, 12, -13, 13, -15, 15),
+                Set.of(48, -42, -43, -44, -45, 45, 46, 47),
+                Set.of(-114, 129, -115, 132, -118, -120, -121, 138, 125, 127)));
+        hashOfNumbers.put("J", List.of(
+                Set.of(0),
+                Set.of(-24, 25, -27, 27),
+                Set.of(-85, 85, 86, -88, -72, 73, 89)));
+        hashOfNumbers.put("K", List.of(
+                Set.of(-50, 50, 53, 54, -39, -43, 43),
+                Set.of(-54, 54, 55, -44, -45, 45, -46),
+                Set.of(-81, -82, 83, -85, -86, 85, -89, 92, 93, 94)));
+        hashOfNumbers.put("Q", List.of(
+                Set.of(-39, -40, 40, -41, -42, 41, 43),
+                Set.of(-41, -42, 41, 42, 44),
+                Set.of(162, -147, -148, -149, -150, -151, 156, 157, 158)));
+        hashOfNumbers.put("10", List.of(
+                Set.of(-49, 48, 49, -51, -55, -56, 56, 57, -46, -48, 47),
+                Set.of(-33, 33, -36, -44, 44),
+                Set.of(193, -179, 194, 197, -182, 215, -185, 185, 188, 190, -272)));
+        hashOfNumbers.put("2", List.of(
+                Set.of(32, -33, 33, -22, -23, -25, 25, 26),
+                Set.of(48, -51, 51, 52, 54, -43, -45, -46, 46),
+                Set.of(-81, 84, 85, -89, 125, -126, 94, -79, 126)));
+        hashOfNumbers.put("3", List.of(
+                Set.of(-37, 37, -27, -30, 30, 31),
+                Set.of(39, -40, 40, -26, -28, -29, 28, 30),
+                Set.of(-97, 148, 100, -149, 101, 150, -104, 106, -94)));
+        hashOfNumbers.put("4", List.of(
+                Set.of(-17, 17, -18, 18, -21, 21, -14, 13, -15, 15),
+                Set.of(-33, 34, -36, 35, 36, -42, -43, 42, 43),
+                Set.of(-118, -119, 119, -152, -105, 152, -154, 154, 107, -144, 127)));
+        hashOfNumbers.put("5", List.of(
+                Set.of(-50, 51, -53, -54, 55, 57, 58, -62),
+                Set.of(32, -26, -42, -27, -29, 29, 30),
+                Set.of(-81, -83, 84, 85, -123, -77, 78, 79)));
+        hashOfNumbers.put("6", List.of(
+                Set.of(-50, -51, 51, 52, 54, 56, 57, -47, -48),
+                Set.of(48, 49, 50, 69, -44, -47, -48),
+                Set.of(-84, 89, -91, 123, 92, 93, 125)));
+        hashOfNumbers.put("7", List.of(
+                Set.of(-33, -34, 21, -23, -24, 24, -25, 25, -26, 26, 31),
+                Set.of(32, 33, -34, -35, 36, -38, 37, 38, -42, -45, -31),
+                Set.of(-65, -82, -83, 68, -55, 57, -58, -59, 61, 95, -80)));
+        hashOfNumbers.put("8", List.of(
+                Set.of(-49, 49, -44, -45, -46, 46, 47),
+                Set.of(-49, 48, -50, 50, 52, 53, -48),
+                Set.of(98, -100, 100, 101, 104, -93, -94, 109, -95)));
+        hashOfNumbers.put("9", List.of(
+                Set.of(48, 49, 50, -56, -44, -45, 47, -48),
+                Set.of(-34, -36, 37, 39, -41, 40, -58, 42),
+                Set.of(-145, -98, 103, -105, -107, 107, 109)));
+
 
         suitsByHash.put(98, "c");
         suitsByHash.put(107, "c");
+        suitsByHash.put(143, "c");
 
         suitsByHash.put(115, "s");
-        suitsByHash.put(152, "s");
+        suitsByHash.put(158, "s");
 
+        suitsByHash.put(-92, "d");
         suitsByHash.put(-93, "d");
+        suitsByHash.put(-116, "d");
 
+        suitsByHash.put(-141, "h");
         suitsByHash.put(-114, "h");
         suitsByHash.put(-101, "h");
-
     }
 
     public static final Rectangle SEARCH_AREA = new Rectangle(100, 380, 520 - 100, 830 - 380);
     private static final int TONE_SENSITIVITY = 10;
     public static final int LIGHT_GRAY_TONE = 0x75;
     public static final int BLACK_TONE = 0x23;
-    private static final int RED_TONE = 0xCD;
+    private static final int RED_TONE = 0x60;
     public static final int CARD_SIZE_RUN = 12;
+    public static final int SEARCH_BEST_Y_DEPTH = 8;
     private static final int CARD_WIDTH = 52;
     public static final int CARD_HEIGHT = 74;
+    public static final int SUIT_START_Y = 27;
+    public static final int NUMBER_SPLIT_X = 8;
 
     public static void main(String[] args) {
         Consumer<String> logger = System.out::println;
@@ -59,50 +117,23 @@ public class Main {
         }
         logger.accept("Parse png files in directory " + args[0]);
         try {
-            streamFileNamesInDir(args[0]).stream().map(path -> path + " - " + processFile(logger, path)).forEach(logger);
+            streamFileNamesInDir(args[0]).stream()
+                    .map(path -> path + " - " + processFile(logger, path))
+                    .forEach(logger);
         } catch (NoSuchFileException e) {
             logger.accept("Directory " + args[0] + " does not exist.");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        logger.accept("=========================== hash 1,2 for numbers");
-        Set<String> numbers = new HashSet<>(fBoundsByNumber.keySet());
-        numbers.addAll(lBoundsByNumber.keySet());
-        numbers.forEach(number -> {
-            logger.accept("=== " + number);
-            var points = fBoundsByNumber.get(number);
-            if (points != null) {
-                logger.accept(" fBoundsByNumber.put(\"" + number + "\", List.of" + points.stream()
-                        .sorted()
-                        .map(i -> i.toString())
-                        .toList()
-                + ");");
-            }
-
-            points = lBoundsByNumber.get(number);
-            if (points != null) {
-                logger.accept(" lBoundsByNumber.put(\"" + number + "\", List.of" + points.stream()
-                        .sorted()
-                        .map(i -> i.toString())
-                        .toList()
-                        + ");");
-            }
-
-//
-//
-//            final int[] x = new int[]{0, Integer.MIN_VALUE, Integer.MAX_VALUE, 0}; // -min,-max, +min, +max
-//            points.forEach(p -> {
-//                int idx = p.x < 0 ? 0 : 2;
-//                x[0] = min(x[idx], p.x);
-//                x[1] = max(x[idx + 1], p.x);
-//                idx = p.y < 0 ? 0 : 2;
-//                y[0] = min(y[idx], p.y);
-//                y[1] = max(y[idx + 1], p.y);
-//
-//            });
-//
-//            logger.accept(" " + Arrays.toString(x));
+        logger.accept("=========================== hashes 1,2,3.. for numbers");
+        boundsByNumber.entrySet().forEach(entry -> {
+            String number = entry.getKey();
+            String values = entry.getValue().stream()
+                    .map(points -> points.stream().map(v -> v.toString())
+                            .collect(Collectors.joining(", ", "Set.of(", ")")))
+                    .collect(Collectors.joining(",\n      "));
+            logger.accept("hashOfNumbers.put(\"" + number + "\", List.of(\n" + values + "));");
         });
     }
 
@@ -116,6 +147,7 @@ public class Main {
         final String writeName = pathToFile.getFileName().toString();
         final String cards = writeName.substring(0, writeName.lastIndexOf('.'));
         final String cardsNorm = cards.replace("10", "1");
+        final int realCardsCount = cardsNorm.length() / 2;
         final StringBuilder result = new StringBuilder();
         try {
             final BufferedImage image = ImageIO.read(pathToFile.toFile());
@@ -125,41 +157,48 @@ public class Main {
             List<Rectangle> cardsToCheck = findPotentialCards(searchArea);
             final int[] i = new int[]{0};
             cardsToCheck.forEach(card -> {
-                BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, 30, 23); //toBwImage();
-                Point suitStart = fitBoundRightDown(searchArea,
-                        card.x, card.y + SUIT_START_Y,
-                        card.x + 12, card.y + SUIT_START_Y + 21,
-                        10, 10);
+                String realNumber = cardsNorm.substring(i[0] * 2, i[0] * 2 + 1);
+                String realSuit = cardsNorm.substring(i[0] * 2 + 1, i[0] * 2 + 2);
+
+                BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, 30, 23);
+                Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y, card.x + 12, card.y + SUIT_START_Y + 21, 17, 17);
                 if (suitStart == null) {
-                    suitStart = new Point(card.x, card.y);
+                    suitStart = new Point(card.x, card.y + SUIT_START_Y);
                 }
                 BufferedImage suitImg = searchArea.getSubimage(suitStart.x, suitStart.y, 16, 21);
                 boolean isRed = isRed(suitImg);
-                int numberHash1 = (isRed ? -1 : 1) *
-                        countPixels(numberImg.getSubimage(0, 0, numberImg.getWidth(), numberImg.getHeight()));
-                int numberHash2 = countPixels(numberImg.getSubimage(11, 0, numberImg.getWidth() - 11, numberImg.getHeight()));
+                int ySplit = numberImg.getHeight() / 2;
+                List<Integer> hashes = List.of(
+                        (isRed ? -1 : 1) * countPixels(numberImg.getSubimage(0, 0, NUMBER_SPLIT_X, ySplit)),
+                        (isRed ? -1 : 1) * countPixels(numberImg.getSubimage(0, ySplit, NUMBER_SPLIT_X, numberImg.getHeight() - ySplit)),
+                        (isRed ? -1 : 1) * countPixels(numberImg.getSubimage(NUMBER_SPLIT_X, 0, numberImg.getWidth() - NUMBER_SPLIT_X, numberImg.getHeight()))
+                );
+                int numberHashesSize = hashes.size();
                 int suitHash = countPixels(suitImg);
 
-                String number = getMostFitted(hashOfNumbers, numberHash1, numberHash2);
+                String number = getMostFitted(hashOfNumbers, hashes);
                 String suit = getMostFitted(suitsByHash, (isRed ? -1 : 1) * suitHash);
                 if (number != null && suit != null) {
                     result.append(number);
                     result.append(suit);
                 }
-                String realNumber = cardsNorm.substring(i[0] * 2, i[0] * 2 + 1);
-                String realSuit = cardsNorm.substring(i[0] * 2 + 1, i[0] * 2 + 2);
-                logger.accept("Card: (" + card.x + ", " + card.y + ", " + card.width + ", " + card.height + ") = "
-                        + numberHash1 + "." + numberHash2 + "_" + (isRed ? 'R' : "B") + suitHash + "="
-                        + realNumber + realSuit + " >>> " + number + suit);
+                logger.accept("Card: (" + card.x + ", " + card.y + ", " + card.width + ", " + card.height + ") = " + hashes + "_" + (isRed ? 'R' : "B") + suitHash + "=" + realNumber + realSuit + " >>> " + number + suit);
 
-                fBoundsByNumber.computeIfAbsent(realNumber, k -> new HashSet<>())
-                        .add(numberHash1);
-                lBoundsByNumber.computeIfAbsent(realNumber, k -> new HashSet<>())
-                        .add(numberHash2);
+                List<Set<Integer>> hashesToFill = boundsByNumber.computeIfAbsent(realNumber, k -> {
+                    var values = new ArrayList<Set<Integer>>();
+                    for (int j = 0; j < numberHashesSize; ++j) {
+                        values.add(new HashSet<>());
+                    }
+                    return values;
+                });
+                for (int j = 0; j < numberHashesSize; ++j) {
+                    hashesToFill.get(j)
+                            .add(hashes.get(j));
+                }
 
-                write(pathToFile, "t/" + "_N_" + realNumber + "_" + writeName, numberImg);
-                write(pathToFile, "t/" + "_S_" + realSuit + "_" + writeName, suitImg);
-                write(pathToFile, "t/" + "x" + card.x + 'y' + card.y + '_' + writeName, searchArea.getSubimage(card.x, card.y, CARD_WIDTH, CARD_HEIGHT));
+                write(pathToFile, "t/" + "zN_" + realNumber + realSuit + "_" + writeName, numberImg);
+                write(pathToFile, "t/" + "zS_" + realSuit + realNumber + "_" + writeName, suitImg);
+                write(pathToFile, "t/" + "z_" + realNumber + realSuit + "_x" + card.x + 'y' + card.y + '_' + writeName, searchArea.getSubimage(card.x, card.y, CARD_WIDTH, CARD_HEIGHT));
                 i[0] = i[0] + 1;
             });
         } catch (IOException e) {
@@ -173,24 +212,25 @@ public class Main {
         return result.isEmpty() ? "Found nothing" : cardsComputed;
     }
 
-    private static String getMostFitted(Map<Rectangle, String> hashOfNumbers, int hash1, int hash2) {
-        return hashOfNumbers.entrySet().stream()
+    private static String getMostFitted(Map<String, List<Set<Integer>>> hashOfNumbers, List<Integer> hash) {
+        List<String> numbers = hashOfNumbers.entrySet()
+                .stream()
                 .filter(entry -> {
-                    var r = entry.getKey();
-                    return hash1 > r.x && hash1 < r.y && hash2 > r.width && hash2 < r.height;
+                    var hashes = entry.getValue();
+                    int size = min(hashes.size(), hash.size());
+                    for (int i = 0; i < size; ++i) {
+                        if (!hashes.get(i).contains(hash.get(i))) {
+                            return false;
+                        }
+                    }
+                    return true;
                 })
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private static BufferedImage toBwImage(BufferedImage image) {
-        BufferedImage result = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
-
-        Graphics2D graphic = result.createGraphics();
-        graphic.drawImage(image, 0, 0, Color.WHITE, null);
-        graphic.dispose();
-        return result;
+                .map(Map.Entry::getKey)
+                .toList();
+        if (numbers.size() > 1) {
+            System.out.println("*** For hash " + hash + " fits " + numbers);
+        }
+        return numbers.isEmpty() ? null : numbers.get(0);
     }
 
     private static String getMostFitted(TreeMap<Integer, String> values, int hash) {
@@ -257,28 +297,49 @@ public class Main {
     }
 
     private static List<Rectangle> findPotentialCards(BufferedImage image) {
-        final Set<Rectangle> rectangles = new HashSet<>();
+        final List<Rectangle> rectangles = new ArrayList<>();
         int w = image.getWidth() - CARD_WIDTH - 2;
         int h = image.getHeight() - CARD_HEIGHT - 2;
         int y = 0;
         while (y < h) {
             int x = 0;
-            boolean isFound = false;
             while (x < w) {
                 if (isCardStripeHorizontal(image, x, y, CARD_WIDTH) && isCardStripeHorizontal(image, x, y + SUIT_START_Y + 1, CARD_WIDTH)) {
-                    Point start = fitBoundRightDown(image, x, y, x + CARD_SIZE_RUN, y + CARD_SIZE_RUN, CARD_WIDTH + 1, CARD_HEIGHT + 2);
-                    if (start != null) {
-                        x = start.x;
+                    List<Point> cardsToAdd = findBestStartOfCards(image, y);
+                    cardsToAdd.forEach(start -> {
+                        start = fitBoundRightDown(image, start.x, start.y, start.x + CARD_SIZE_RUN, start.y + CARD_SIZE_RUN, CARD_WIDTH + 1, CARD_HEIGHT + 1);
                         rectangles.add(new Rectangle(start.x + 1, start.y + 1, CARD_WIDTH, CARD_HEIGHT));
-                    }
-                    x += CARD_WIDTH + 1;
+                    });
+                    y += CARD_HEIGHT;
+                    break;
                 } else {
                     ++x;
                 }
             }
             ++y;
         }
-        return rectangles.stream().sorted(Comparator.comparing(Rectangle::getY).thenComparing(Rectangle::getX)).toList();
+        return rectangles;
+    }
+
+    private static List<Point> findBestStartOfCards(BufferedImage img, int y) {
+        List<Point> bestCardStars = null;
+        for (int i = 0; i < SEARCH_BEST_Y_DEPTH; ++i) {
+            List<Point> tmpCards = new ArrayList<>(10);
+            int x = 0;
+            while (x < img.getWidth()) {
+                if (isCardStripeHorizontal(img, x, y + i, CARD_WIDTH) && isCardStripeHorizontal(img, x, y + i + SUIT_START_Y + 1, CARD_WIDTH) && isCardStripeVertical(img, x, y + i, CARD_HEIGHT + 1)) {
+                    tmpCards.add(new Point(x, y + i));
+                    x += CARD_WIDTH + 1;
+                } else {
+                    ++x;
+                }
+            }
+            // If the same size, higher y is better
+            if (bestCardStars == null || bestCardStars.size() <= tmpCards.size()) {
+                bestCardStars = tmpCards;
+            }
+        }
+        return bestCardStars;
     }
 
     // Search last white stripe in horizontal and vertical
@@ -344,6 +405,18 @@ public class Main {
         int g1 = ((rgb >> 8) & 0xFF);
         int b1 = (rgb & 0xFF);
         return r1 <= BLACK_TONE && g1 <= BLACK_TONE && b1 <= BLACK_TONE;
+    }
+
+
+    /////////////////////////////////////////////////////
+
+    private static BufferedImage toBwImage(BufferedImage image) {
+        BufferedImage result = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+
+        Graphics2D graphic = result.createGraphics();
+        graphic.drawImage(image, 0, 0, Color.WHITE, null);
+        graphic.dispose();
+        return result;
     }
 
     public static int[] findSubimage(BufferedImage im1, BufferedImage im2) {
