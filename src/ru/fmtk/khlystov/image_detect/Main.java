@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,7 +23,6 @@ public class Main {
     // sx,sy - bounds of the hash of the first part of picture
     // ex, ey - bounds of the hash of the second part of picture
     private static final Map<String, List<Set<Integer>>> hashOfNumbers = new HashMap<>();
-    private static final Map<String, List<Set<Integer>>> boundsByNumber = new HashMap<>();
     private static final TreeMap<Integer, String> suitsByHash = new TreeMap<>();
 
     static {
@@ -68,6 +68,7 @@ public class Main {
     public static final int NUMBER_SPLIT_X = 8;
 
     public static void main(String[] args) {
+        final AtomicInteger errCount = new AtomicInteger(0);
         Consumer<String> logger = System.out::println;
 
         if (args.length == 0 || args[0].trim().isEmpty()) {
@@ -76,19 +77,24 @@ public class Main {
         }
         logger.accept("Parse png files in directory " + args[0]);
         try {
-            streamFileNamesInDir(args[0]).stream().map(path -> path + " - " + processFile(logger, path)).forEach(logger);
+            streamFileNamesInDir(args[0]).stream()
+                    .map(path -> new AbstractMap.SimpleEntry<>(path, processFile(path)))
+                    .forEach(entry -> {
+                        String fName = entry.getKey().getFileName().toString();
+                        String cards = entry.getValue();
+                        logger.accept(fName + " - " + cards);
+                        if(!fName.equals(cards + ".png")) {
+                            errCount.incrementAndGet();
+                        }
+                    });
+            if(errCount.get() > 0) {
+                logger.accept("Errors: " + errCount.get());
+            }
         } catch (NoSuchFileException e) {
             logger.accept("Directory " + args[0] + " does not exist.");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        logger.accept("=========================== hashes 1,2,3.. for numbers");
-        boundsByNumber.entrySet().forEach(entry -> {
-            String number = entry.getKey();
-            String values = entry.getValue().stream().map(points -> points.stream().map(v -> v.toString()).collect(Collectors.joining(", ", "Set.of(", ")"))).collect(Collectors.joining(",\n      "));
-            logger.accept("hashOfNumbers.put(\"" + number + "\", List.of(\n" + values + "));");
-        });
     }
 
     private static List<Path> streamFileNamesInDir(String dirName) throws IOException {
@@ -97,22 +103,19 @@ public class Main {
         }
     }
 
-    private static String processFile(Consumer<String> logger, Path pathToFile) {
+    private static String processFile(Path pathToFile) {
         final String writeName = pathToFile.getFileName().toString();
         final String cards = writeName.substring(0, writeName.lastIndexOf('.'));
         final String cardsNorm = cards.replace("10", "1");
-        final int realCardsCount = cardsNorm.length() / 2;
         final StringBuilder result = new StringBuilder();
         try {
             final BufferedImage image = ImageIO.read(pathToFile.toFile());
             BufferedImage searchArea = image.getSubimage(SEARCH_AREA.x, SEARCH_AREA.y, SEARCH_AREA.width, SEARCH_AREA.height);
-//            write(pathToFile, "t/" + writeName, searchArea);
 
             List<Rectangle> cardsToCheck = findPotentialCards(searchArea);
             final int[] i = new int[]{0};
             cardsToCheck.forEach(card -> {
                 String realNumber = cardsNorm.substring(i[0] * 2, i[0] * 2 + 1);
-                String realSuit = cardsNorm.substring(i[0] * 2 + 1, i[0] * 2 + 2);
 
                 BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, 30, 23);
                 Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y, card.x + 12, card.y + SUIT_START_Y + 21, 17, 17);
@@ -132,22 +135,8 @@ public class Main {
                     result.append(number);
                     result.append(suit);
                 }
-                logger.accept("Card: (" + card.x + ", " + card.y + ", " + card.width + ", " + card.height + ") = " + hashes + "_" + (isRed ? 'R' : "B") + suitHash + "=" + realNumber + realSuit + " >>> " + number + suit);
 
-                List<Set<Integer>> hashesToFill = boundsByNumber.computeIfAbsent(realNumber, k -> {
-                    var values = new ArrayList<Set<Integer>>();
-                    for (int j = 0; j < numberHashesSize; ++j) {
-                        values.add(new HashSet<>());
-                    }
-                    return values;
-                });
-                for (int j = 0; j < numberHashesSize; ++j) {
-                    hashesToFill.get(j).add(hashes.get(j));
-                }
 
-//                write(pathToFile, "t/" + "zN_" + realNumber + realSuit + "_" + writeName, numberImg);
-//                write(pathToFile, "t/" + "zS_" + realSuit + realNumber + "_" + writeName, suitImg);
-//                write(pathToFile, "t/" + "z_" + realNumber + realSuit + "_x" + card.x + 'y' + card.y + '_' + writeName, searchArea.getSubimage(card.x, card.y, CARD_WIDTH, CARD_HEIGHT));
                 i[0] = i[0] + 1;
             });
         } catch (IOException e) {
@@ -155,9 +144,6 @@ public class Main {
         }
 
         final String cardsComputed = result.toString();
-        if (!cards.equals(cardsComputed)) {
-            logger.accept("-------- " + cards + " || " + cardsComputed);
-        }
         return result.isEmpty() ? "Found nothing" : cardsComputed;
     }
 
@@ -172,9 +158,6 @@ public class Main {
             }
             return true;
         }).map(Map.Entry::getKey).toList();
-        if (numbers.size() > 1) {
-            System.out.println("*** For hash " + hash + " fits " + numbers);
-        }
         return numbers.isEmpty() ? null : numbers.get(0);
     }
 
