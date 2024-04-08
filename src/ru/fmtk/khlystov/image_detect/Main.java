@@ -21,6 +21,10 @@ public class Main {
 
     private static final Map<String, List<Set<Integer>>> hashOfNumbers = new HashMap<>();
     private static final TreeMap<Integer, String> suitsByHash = new TreeMap<>();
+    public static final int NUMBER_WIDTH = 30;
+    public static final int NUMBER_HEIGHT = 23;
+    public static final int SUIT_WIDTH = 16;
+    public static final int SUIT_HEIGHT = 21;
 
     static {
         hashOfNumbers.put("A", List.of(Set.of(17, 9, -10, -11, -12, 12, -13, 13, -15, 15),
@@ -117,6 +121,7 @@ public class Main {
         try (Stream<Path> stream = Files.list(Paths.get(dirName))) {
             return stream.filter(file -> !Files.isDirectory(file) &&
                                          file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
+                         .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()))
                          .toList();
         }
     }
@@ -130,13 +135,14 @@ public class Main {
 
             List<Rectangle> cardsToCheck = findPotentialCards(searchArea);
             cardsToCheck.forEach(card -> {
-                BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, 30, 23);
-                Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y, card.x + 12,
-                                                    card.y + SUIT_START_Y + 21, 17, 17);
+                BufferedImage numberImg = searchArea.getSubimage(card.x, card.y, NUMBER_WIDTH, NUMBER_HEIGHT);
+                Point suitStart = fitBoundRightDown(searchArea, card.x, card.y + SUIT_START_Y,
+                                                    card.x + 12, card.y + SUIT_START_Y + 21,
+                                                    SUIT_WIDTH, SUIT_HEIGHT);
                 if (suitStart == null) {
                     suitStart = new Point(card.x, card.y + SUIT_START_Y);
                 }
-                BufferedImage suitImg = searchArea.getSubimage(suitStart.x, suitStart.y, 16, 21);
+                BufferedImage suitImg = searchArea.getSubimage(suitStart.x, suitStart.y, SUIT_WIDTH, SUIT_HEIGHT);
                 int red = isRed(suitImg) ? -1 : 1;
                 int ySplit = numberImg.getHeight() / 2;
                 List<Integer> hashes = List.of(
