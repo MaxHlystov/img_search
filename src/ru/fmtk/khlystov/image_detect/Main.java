@@ -278,7 +278,7 @@ public class Main {
                 bestCardStars = tmpCards;
             }
         }
-        return bestCardStars;
+        return bestCardStars == null ? Collections.emptyList() : bestCardStars;
     }
 
 
