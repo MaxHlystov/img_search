@@ -64,7 +64,7 @@ public class Main {
         logger.accept("Parse png files in directory " + args[0]);
         try {
             streamFileNamesInDir(args[0]).stream()
-                                         .map(path -> path + " - " + processFile(logger, path))
+                                         .map(path -> path + " - " + processFile(path))
                                          .forEach(logger);
         } catch (NoSuchFileException e) {
             logger.accept("Directory " + args[0] + " does not exist.");
@@ -81,9 +81,7 @@ public class Main {
         }
     }
 
-    private static String processFile(Consumer<String> logger, Path pathToFile) {
-        final String writeName = pathToFile.getFileName().toString();
-        final String cards = writeName.substring(0, writeName.lastIndexOf('.'));
+    private static String processFile(Path pathToFile) {
         final StringBuilder result = new StringBuilder();
         try {
             final BufferedImage image = ImageIO.read(pathToFile.toFile());
