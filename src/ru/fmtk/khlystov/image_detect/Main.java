@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -48,24 +49,34 @@ public class Main {
     public static final int BLACK_TONE = 0x23;
     private static final int RED_TONE = 0x60;
     public static final int CARD_SIZE_RUN = 12;
-    public static final int SEARCH_BEST_Y_DEPTH = 8;
+    public static final int SEARCH_BEST_Y_DEPTH = 7;
     private static final int CARD_WIDTH = 52;
     public static final int CARD_HEIGHT = 74;
     public static final int SUIT_START_Y = 27;
     public static final int NUMBER_SPLIT_X = 8;
 
     public static void main(String[] args) {
+        final AtomicInteger errCount = new AtomicInteger(0);
         Consumer<String> logger = System.out::println;
 
         if (args.length == 0 || args[0].trim().isEmpty()) {
             logger.accept("You need to specify directory for searching.");
             return;
         }
-        logger.accept("Parse png files in directory " + args[0]);
         try {
             streamFileNamesInDir(args[0]).stream()
-                                         .map(path -> path + " - " + processFile(path))
-                                         .forEach(logger);
+                                         .map(path -> new AbstractMap.SimpleEntry<>(path, processFile(path)))
+                                         .forEach(entry -> {
+                                             String fName = entry.getKey().getFileName().toString();
+                                             String cards = entry.getValue();
+                                             logger.accept(fName + " - " + cards);
+                                             if (!fName.equals(cards + ".png")) {
+                                                 errCount.incrementAndGet();
+                                             }
+                                         });
+            if (errCount.get() > 0) {
+                logger.accept("Errors: " + errCount.get());
+            }
         } catch (NoSuchFileException e) {
             logger.accept("Directory " + args[0] + " does not exist.");
         } catch (IOException e) {
@@ -315,5 +326,24 @@ public class Main {
         int g1 = ((rgb >> 8) & 0xFF);
         int b1 = (rgb & 0xFF);
         return r1 <= BLACK_TONE && g1 <= BLACK_TONE && b1 <= BLACK_TONE;
+    }
+
+
+    ///////////////////
+
+    private static String toRGBString(int rgb) {
+        int r1 = ((rgb >> 16) & 0xFF);
+        int g1 = ((rgb >> 8) & 0xFF);
+        int b1 = (rgb & 0xFF);
+        return String.format("#%02X%02X%02X", r1, g1, b1);
+    }
+
+    private static void write(Path pathToFile, String name, BufferedImage searchArea) {
+        Path write = pathToFile.getParent().resolve(name);
+        try {
+            ImageIO.write(searchArea, "png", write.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
